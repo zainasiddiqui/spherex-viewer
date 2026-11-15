@@ -380,7 +380,7 @@ def plot_contact_sheet(frames, ncols=6, max_frames=18):
         ax.imshow(f["snr"], **STRETCH)
         ax.add_patch(Circle((f["x"], f["y"]), 2.8, fill=False, ec="tab:red", lw=1))
         ax.set_title(_label(f), fontsize=7)
-    fig.suptitle("Contact sheet (red ring = predicted position)", y=1.01, fontsize=11)
+    fig.suptitle("Frame grid (red ring = predicted position)", y=1.01, fontsize=11)
     fig.tight_layout()
     return fig
 
@@ -469,8 +469,8 @@ def plot_difference(frames, fraction=0.34):
 
 st.sidebar.title("SPHEREx Time-Lapse")
 st.sidebar.markdown(
-    "Enter a sky position (or pick a challenge target) and watch a short "
-    "time-lapse of SPHEREx images so moving objects stand out."
+    "Choose a target, then build a time-lapse of SPHEREx observations "
+    "to look for objects that change position between visits."
 )
 
 # --- Target selection ---
@@ -578,10 +578,11 @@ run_button = st.sidebar.button("Build time-lapse", type="primary", use_container
 st.sidebar.markdown(
     """
     ---
-    **Tips**
-    - Start with **WISE 0855** + detector **6** + FOV **3′**
-    - IRSA sometimes returns 502s – the app retries automatically
-    - Once you have frames, tick “Prefer cached frames” for instant demos
+    **Getting started**
+    - For a fast-moving brown dwarf, try **WISE 0855** with detector **6** and a 3′ field of view
+    - Larger fields of view help track faster objects but take longer to load
+    - Once frames are loaded, enable **Prefer cached frames** for instant replay
+    - The difference image often makes motion clearer than the time-lapse alone
     """
 )
 
@@ -592,10 +593,9 @@ st.sidebar.markdown(
 
 st.title("SPHEREx Time-Lapse Viewer")
 st.markdown(
-    "Display a series of SPHEREx images of any patch of sky as a short "
-    "time-lapse. Fixed stars stay put; nearby moving objects "
-    "(brown dwarfs, asteroids, comets…) change position from frame to frame — "
-    "exactly how many new objects have been discovered."
+    "Explore how any region of the SPHEREx infrared sky changes over time. "
+    "Enter coordinates, search by name, or pick a preset target to view a "
+    "time-lapse, frame grid, and difference image that highlight moving objects."
 )
 
 if tgt is None:
@@ -705,7 +705,7 @@ if run_button or use_cache:
 # ── Display results ──────────────────────────────────────────────────────────
 if frames:
     tab_flip, tab_sheet, tab_diff, tab_info = st.tabs(
-        ["Time-lapse", "Contact sheet", "Difference image", "Frame info"]
+        ["Time-lapse", "Frame grid", "Difference image", "Frame info"]
     )
 
     with tab_flip:
@@ -726,7 +726,11 @@ if frames:
             plt.close(fig)
 
     with tab_sheet:
-        st.subheader("Contact sheet")
+        st.subheader("Frame grid")
+        st.caption(
+            "All selected frames arranged in time order. "
+            "The red ring marks the predicted position of the target in each frame."
+        )
         fig = plot_contact_sheet(frames)
         st.pyplot(fig)
         plt.close(fig)
