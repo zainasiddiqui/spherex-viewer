@@ -1,0 +1,8 @@
+streamlit
+numpy
+pandas
+astropy
+matplotlib
+astroquery
+reproject
+tqdm
