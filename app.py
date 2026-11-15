@@ -68,10 +68,12 @@ TARGETS = {
         note="Nearby K dwarf",
     ),
     "Epsilon Indi B": dict(
-        name="eps Ind Ba",
+        # Approximate position of the Ba/Bb brown-dwarf pair (~6.7 arcmin from Eps Ind A)
+        # Fixed coordinates so we don't depend on SIMBAD name resolution
+        coord="22h04m10.5s -56d46m30s",
         epoch=2000.0,
         pm=(3966.661, -2536.192),
-        note="Brown-dwarf binary companion",
+        note="Brown-dwarf binary companion (~6.7' from Eps Ind A)",
     ),
     "RW Aur": dict(
         name="RW Aur",
