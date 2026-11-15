@@ -1,9 +1,10 @@
 """
-SPHEREx Sky Flipbook
+SPHEREx Time-Lapse Viewer
 NASA Space Apps Challenge – Planet X and SPHEREx
 
 A public web tool that shows SPHEREx images of any sky patch as a short
-flipbook so moving objects (brown dwarfs, asteroids, comets…) jump out.
+time-lapse sequence so moving objects (brown dwarfs, asteroids, comets…)
+stand out by changing position between frames.
 """
 
 import concurrent.futures
@@ -32,7 +33,7 @@ from reproject import reproject_interp
 
 # ── Streamlit page config ────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="SPHEREx Sky Flipbook",
+    page_title="SPHEREx Time-Lapse Viewer",
     page_icon="🌌",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -465,10 +466,10 @@ def plot_difference(frames, fraction=0.34):
 # Sidebar UI
 # ══════════════════════════════════════════════════════════════════════════════
 
-st.sidebar.title("SPHEREx Sky Flipbook")
+st.sidebar.title("SPHEREx Time-Lapse")
 st.sidebar.markdown(
-    "Enter a sky position (or pick a challenge target) and watch how it changes "
-    "across SPHEREx visits."
+    "Enter a sky position (or pick a challenge target) and watch a short "
+    "time-lapse of SPHEREx images so moving objects stand out."
 )
 
 # --- Target selection ---
@@ -537,7 +538,7 @@ use_cache = st.sidebar.checkbox(
     help="If checked, load previously saved frames for this target instead of querying IRSA.",
 )
 
-run_button = st.sidebar.button("Build flipbook", type="primary", use_container_width=True)
+run_button = st.sidebar.button("Build time-lapse", type="primary", use_container_width=True)
 
 st.sidebar.markdown(
     """
@@ -554,15 +555,16 @@ st.sidebar.markdown(
 # Main area
 # ══════════════════════════════════════════════════════════════════════════════
 
-st.title("SPHEREx Sky Flipbook")
+st.title("SPHEREx Time-Lapse Viewer")
 st.markdown(
-    "A short looping view of any patch of sky as photographed by NASA’s "
-    "**SPHEREx** mission. Fixed stars stay put; nearby moving objects "
-    "(brown dwarfs, asteroids, comets…) slide from frame to frame."
+    "Display a series of SPHEREx images of any patch of sky as a short "
+    "time-lapse. Fixed stars stay put; nearby moving objects "
+    "(brown dwarfs, asteroids, comets…) change position from frame to frame — "
+    "exactly how many new objects have been discovered."
 )
 
 if tgt is None:
-    st.info("← Choose a target in the sidebar and click **Build flipbook**.")
+    st.info("← Choose a target in the sidebar and click **Build time-lapse**.")
     st.stop()
 
 # Show predicted position
@@ -661,21 +663,21 @@ if run_button or use_cache:
             st.error(f"Failed to build frames:\n\n```\n{e}\n```")
             st.info(
                 "Most failures are temporary IRSA 502s. Wait a few minutes and click "
-                "**Build flipbook** again. You can also lower Max frames or FOV."
+                "**Build time-lapse** again. You can also lower Max frames or FOV."
             )
             st.stop()
 
 # ── Display results ──────────────────────────────────────────────────────────
 if frames:
     tab_flip, tab_sheet, tab_diff, tab_info = st.tabs(
-        ["Flipbook", "Contact sheet", "Difference image", "Frame info"]
+        ["Time-lapse", "Contact sheet", "Difference image", "Frame info"]
     )
 
     with tab_flip:
-        st.subheader("Flipbook")
+        st.subheader("Time-lapse sequence")
         st.caption(
-            "Press play. Fixed stars stay put; a mover slides along the red track. "
-            "The red ring is the predicted position of the target."
+            "Press play. Fixed stars stay put; a moving object slides along the red track. "
+            "The red ring marks the predicted position of the target."
         )
         speed = st.slider("Frame interval (ms)", 150, 1200, 450, 50)
         try:
@@ -730,4 +732,4 @@ if frames:
         )
 
 else:
-    st.info("Click **Build flipbook** in the sidebar to start.")
+    st.info("Click **Build time-lapse** in the sidebar to start.")
