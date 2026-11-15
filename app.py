@@ -494,17 +494,51 @@ if mode == "Challenge targets":
     target_label = choice
 
 elif mode == "Custom coordinates":
-    ra_str = st.sidebar.text_input("RA (hours or degrees)", "08h55m10.831s")
-    dec_str = st.sidebar.text_input("Dec", "-07d14m42.53s")
+    coord_unit = st.sidebar.radio(
+        "Coordinate format",
+        ["Degrees", "h/m/s  +  d/m/s"],
+        index=0,
+        horizontal=True,
+        help="Degrees match the SPHEREx tutorials. Sexagesimal is the classic format.",
+    )
+    if coord_unit == "Degrees":
+        ra_deg = st.sidebar.number_input(
+            "RA (degrees)", value=133.7951, min_value=0.0, max_value=360.0,
+            step=0.0001, format="%.4f",
+            help="Right Ascension in decimal degrees (0–360)",
+        )
+        dec_deg = st.sidebar.number_input(
+            "Dec (degrees)", value=-7.2451, min_value=-90.0, max_value=90.0,
+            step=0.0001, format="%.4f",
+            help="Declination in decimal degrees (−90 to +90)",
+        )
+        try:
+            coord = SkyCoord(ra_deg * u.deg, dec_deg * u.deg, frame="icrs")
+        except Exception as e:
+            st.sidebar.error(f"Could not create coordinates: {e}")
+            coord = None
+    else:
+        ra_str = st.sidebar.text_input(
+            "RA (h/m/s)", value="08h55m10.831s",
+            help="Example: 08h55m10.831s or 8:55:10.831",
+        )
+        dec_str = st.sidebar.text_input(
+            "Dec (d/m/s)", value="-07d14m42.53s",
+            help="Example: -07d14m42.53s or -7:14:42.53",
+        )
+        try:
+            coord = SkyCoord(f"{ra_str} {dec_str}", frame="icrs")
+        except Exception as e:
+            st.sidebar.error(f"Could not parse coordinates: {e}")
+            coord = None
+
     epoch = st.sidebar.number_input("Epoch of coordinates", value=2010.4, step=0.1)
     pm_ra = st.sidebar.number_input("pmRA×cosDec (mas/yr)", value=-8118.9, step=1.0)
     pm_dec = st.sidebar.number_input("pmDec (mas/yr)", value=679.3, step=1.0)
-    try:
-        coord = SkyCoord(f"{ra_str} {dec_str}", frame="icrs")
+
+    if coord is not None:
         tgt = dict(coord=coord, epoch=epoch, pm=(pm_ra, pm_dec))
         target_label = f"{coord.ra.deg:.4f}, {coord.dec.deg:.4f}"
-    except Exception as e:
-        st.sidebar.error(f"Could not parse coordinates: {e}")
 
 else:  # Object name
     name = st.sidebar.text_input("Object name (SIMBAD)", "Barnard's Star")
@@ -513,7 +547,7 @@ else:  # Object name
             coord = SkyCoord.from_name(name)
             tgt = dict(coord=coord, epoch=2000.0, pm=(0.0, 0.0))
             target_label = name
-            st.sidebar.success(f"Resolved: {coord.to_string('hmsdms', precision=1)}")
+            st.sidebar.success(f"Resolved: RA {coord.ra.deg:.4f}°, Dec {coord.dec.deg:.4f}°")
         except Exception as e:
             st.sidebar.error(f"Name lookup failed: {e}")
 
@@ -568,12 +602,12 @@ if tgt is None:
     st.info("← Choose a target in the sidebar and click **Build time-lapse**.")
     st.stop()
 
-# Show predicted position
+# Show predicted position (decimal degrees, matching SPHEREx tutorials)
 pos_now = position_at(tgt["coord"], tgt["epoch"], tgt["pm"], query_epoch)
 st.markdown(
     f"**Target:** {target_label}  ·  "
     f"Predicted {query_epoch:.1f} position: "
-    f"`{pos_now.to_string('hmsdms', precision=2)}`  ·  "
+    f"**RA {pos_now.ra.deg:.4f}°, Dec {pos_now.dec.deg:.4f}°**  ·  "
     f"Moved {tgt['coord'].separation(pos_now).arcsec:.1f}″ since epoch {tgt['epoch']}"
 )
 
@@ -591,17 +625,17 @@ if run_button or use_cache:
             st.warning("No cache found for these settings – will query IRSA.")
 
     if frames is None and run_button:
-        progress = st.progress(0, text="Querying IRSA for covering images…")
+        progress = st.progress(0, text="🔭 Querying NASA IRSA archive…")
         status = st.empty()
 
         try:
-            status.info("Step 1/3 – TAP query (may retry on 502s)…")
+            status.info("Step 1/3 – Searching SPHEREx image catalog…")
             images = query_images(
                 pos_now.ra.deg, pos_now.dec.deg,
                 detectors=detectors or None,
             )
-            progress.progress(15, text=f"Found {len(images)} images")
-            status.success(f"Found {len(images)} SPHEREx images covering the position.")
+            progress.progress(15, text=f"Found {len(images)} SPHEREx images")
+            status.success(f"Found {len(images)} SPHEREx images covering this position.")
 
             if len(images) == 0:
                 st.error(
@@ -610,8 +644,8 @@ if run_button or use_cache:
                 )
                 st.stop()
 
-            status.info("Step 2/3 – Downloading cutouts (this is the slow part)…")
-            progress.progress(25, text="Downloading cutouts…")
+            status.info("Step 2/3 – Downloading image cutouts from orbit…")
+            progress.progress(25, text="Downloading cutouts from SPHEREx…")
 
             # We need a non-cached build so we can show progress
             df = thin_evenly(images, max_frames)
@@ -639,11 +673,11 @@ if run_button or use_cache:
                     raw[i] = r
                     done += 1
                     pct = 25 + int(55 * done / len(df))
-                    progress.progress(pct, text=f"Downloaded {done}/{len(df)} cutouts")
+                    progress.progress(pct, text=f"📡 Received {done}/{len(df)} cutouts")
 
-            status.info("Step 3/3 – Aligning & background-subtracting…")
+            status.info("Step 3/3 – Aligning frames & removing sky background…")
             frames, dropped = align_frames(df, raw, grid, shape, track)
-            progress.progress(100, text="Done")
+            progress.progress(100, text="✨ Time-lapse ready")
 
             if not frames:
                 st.error(
