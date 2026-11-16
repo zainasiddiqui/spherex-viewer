@@ -6,3 +6,4 @@ matplotlib
 astroquery
 reproject
 tqdm
+scipy
